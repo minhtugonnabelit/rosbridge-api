@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rosbridge-api"
+version = "0.1.0"
+description = "A small camera and cmd_vel API for robots exposed through rosbridge"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy>=1.24",
+    "opencv-python>=4.8",
+    "roslibpy>=2.0,<3",
+]
+
+[project.optional-dependencies]
+teleop = ["pynput>=1.7"]
+dev = [
+    "build>=1.2",
+    "pytest>=8",
+    "ruff>=0.8",
+    "twine>=5",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/rosbridge_api"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+
