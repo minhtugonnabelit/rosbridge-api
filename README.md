@@ -1,9 +1,5 @@
 # Student Rosbridge API
 
-<!-- > **Temporary package name:** `rosbridge_api` is a working name for
-> packaging tests. Change both the distribution name in `pyproject.toml` and,
-> if desired, the `student_rosbridge` import-package directory before release. -->
-
 A small Python API for students who use an ML model or robotics modelling
 toolbox to control a ROS robot through rosbridge. It exposes only the main
 operations a student control loop needs:
@@ -47,7 +43,7 @@ python -m pip install -e ".[teleop,dev]"
 ## ML/control-loop example
 
 ```python
-from student_rosbridge import RosbridgeRobot
+from rosbridge_api import RosbridgeRobot
 
 with RosbridgeRobot("192.168.1.213") as robot:
     while True:
