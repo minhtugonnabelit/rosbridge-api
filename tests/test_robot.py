@@ -76,6 +76,11 @@ class RosbridgeRobotTest(unittest.TestCase):
 
     def test_setup_and_send_command(self):
         self.assertTrue(self.robot.is_connected)
+        self.assertEqual(set(self.robot._publishers), {"cmd_vel"})
+        self.assertEqual(
+            set(self.robot._subscribers),
+            {"image", "laser_scan", "joint_states"},
+        )
         self.robot.send_command(0.2, -0.4)
 
         message = self.topic("/cmd_vel").messages[-1]
@@ -98,20 +103,75 @@ class RosbridgeRobotTest(unittest.TestCase):
     def test_query_timeout(self):
         self.assertIsNone(self.robot.query_image(timeout=0.01))
 
-    def test_cleanup_stops_robot_and_wakes_query(self):
-        result = []
-        query_thread = threading.Thread(
-            target=lambda: result.append(self.robot.query_image())
+    def test_query_laser_scan_returns_numpy_arrays_and_copy(self):
+        payload = {
+            "angle_min": -1.0,
+            "angle_max": 1.0,
+            "angle_increment": 0.5,
+            "time_increment": 0.001,
+            "scan_time": 0.1,
+            "range_min": 0.12,
+            "range_max": 8.0,
+            "ranges": [1.0, 2.0, float("inf"), 4.0, float("nan")],
+            "intensities": [10.0, 20.0, 0.0, 40.0, 0.0],
+        }
+        self.topic("/scan").callback(payload)
+
+        first = self.robot.query_laser_scan(timeout=0)
+        second = self.robot.query_laser_scan(timeout=0)
+
+        np.testing.assert_allclose(
+            first.angles, [-1.0, -0.5, 0.0, 0.5, 1.0]
         )
-        query_thread.start()
+        np.testing.assert_allclose(first.ranges, payload["ranges"], equal_nan=True)
+        np.testing.assert_allclose(first.intensities, payload["intensities"])
+        self.assertEqual(first.range_min, 0.12)
+        self.assertEqual(first.range_max, 8.0)
+        self.assertIsNot(first.ranges, second.ranges)
+
+    def test_laser_scan_timeout(self):
+        self.assertIsNone(self.robot.query_laser_scan(timeout=0.01))
+
+    def test_wait_for_new_laser_scan_times_out_after_returning_latest(self):
+        payload = {
+            "angle_min": 0.0,
+            "angle_max": 0.0,
+            "angle_increment": 1.0,
+            "range_min": 0.1,
+            "range_max": 5.0,
+            "ranges": [1.0],
+        }
+        self.topic("/scan").callback(payload)
+        self.assertIsNotNone(self.robot.query_laser_scan(timeout=0))
+        self.assertIsNone(
+            self.robot.query_laser_scan(timeout=0.01, wait_for_new=True)
+        )
+
+    def test_cleanup_stops_robot_and_wakes_query(self):
+        image_result = []
+        scan_result = []
+        image_thread = threading.Thread(
+            target=lambda: image_result.append(self.robot.query_image())
+        )
+        scan_thread = threading.Thread(
+            target=lambda: scan_result.append(self.robot.query_laser_scan())
+        )
+        image_thread.start()
+        scan_thread.start()
         time.sleep(0.02)
 
         self.robot.cleanup()
-        query_thread.join(timeout=1.0)
+        image_thread.join(timeout=1.0)
+        scan_thread.join(timeout=1.0)
 
-        self.assertFalse(query_thread.is_alive())
-        self.assertEqual(result, [None])
+        self.assertFalse(image_thread.is_alive())
+        self.assertFalse(scan_thread.is_alive())
+        self.assertEqual(image_result, [None])
+        self.assertEqual(scan_result, [None])
         self.assertEqual(self.topic("/cmd_vel").messages[-1]["linear"]["x"], 0.0)
+        self.assertTrue(self.topic("/scan").unsubscribed)
+        self.assertEqual(self.robot._publishers, {})
+        self.assertEqual(self.robot._subscribers, {})
         self.assertFalse(self.robot.is_connected)
 
     def test_methods_require_setup(self):
@@ -126,4 +186,3 @@ class RosbridgeRobotTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

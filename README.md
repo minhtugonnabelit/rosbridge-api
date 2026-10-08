@@ -6,6 +6,7 @@ operations a student control loop needs:
 
 - connect to the robot;
 - query the latest compressed camera image as a BGR NumPy array;
+- query the latest laser scan as angle and range NumPy arrays;
 - publish linear and angular velocity to `/cmd_vel`;
 - stop and disconnect safely.
 
@@ -16,7 +17,8 @@ The robot must:
 1. run a rosbridge WebSocket server reachable by the student's computer;
 2. accept `geometry_msgs/msg/Twist` messages on `/cmd_vel`;
 3. publish `sensor_msgs/msg/CompressedImage` messages on
-   `/camera/image_raw/compressed`.
+   `/camera/image_raw/compressed`;
+4. publish `sensor_msgs/msg/LaserScan` messages on `/scan`.
 
 Topic names can be changed when constructing `RosbridgeRobot`.
 
@@ -65,12 +67,13 @@ After installing the package, run them from the project directory:
 
 ```bash
 python examples/camera.py 192.168.1.213
+python examples/laser_scan.py 192.168.1.213
 python examples/teleop.py 192.168.1.213
 ```
 
-The camera example exits with `Q` or Escape. The teleop controls are W/S for
-forward/backward, A/D for turning, Space for an immediate stop, and Escape to
-exit.
+The camera and laser-scan visualisers exit with `Q` or Escape. The teleop
+controls are W/S for forward/backward, A/D for turning, Space for an immediate
+stop, and Escape to exit.
 
 ## Test and build
 

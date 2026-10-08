@@ -27,9 +27,9 @@ def teleop_example(robot: RosbridgeRobot, publish_rate: float = 10.0) -> None:
         with command_lock:
             try:
                 if key.char == "w":
-                    command["linear"] = 0.05
+                    command["linear"] = 0.1
                 elif key.char == "s":
-                    command["linear"] = -0.05
+                    command["linear"] = -0.1
                 elif key.char == "a":
                     command["angular"] = 0.8
                 elif key.char == "d":
