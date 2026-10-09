@@ -1,0 +1,18 @@
+[Unit]
+Description=ROS 2 TurtleBot bringup, camera, and rosbridge
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=@ROBOT_USER@
+WorkingDirectory=@ROBOT_HOME@
+Environment=ROS_DISTRO=@ROS_DISTRO@
+ExecStart=/bin/bash @ROBOT_HOME@/start_robot.sh
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=20s
+KillMode=control-group
+
+[Install]
+WantedBy=multi-user.target
